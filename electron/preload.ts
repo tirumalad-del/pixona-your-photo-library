@@ -91,7 +91,7 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   setAutoStart: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
   getAutoStart: () => Promise<boolean>;
-  onScanProgress: (callback: (progress: any) => void) => () => void;,
+  onScanProgress: (callback: (progress: any) => void) => () => void;
     generateThumbnail: (filePath: string) => ipcRenderer.invoke('generate-thumbnail', filePath)
 }
 

@@ -1,6 +1,7 @@
 import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
+import ExifReader from 'exifreader';
 
 // ES Module equivalents for __dirname and __filename
 import { fileURLToPath } from 'url';
@@ -246,6 +247,35 @@ ipcMain.handle('scan-directory', async (_event, directoryPath: string) => {
             if (allExtensions.includes(ext)) {
               try {
                 const stats = await fs.stat(fullPath);
+                                    const buffer = await fs.readFile(fullPath);
+                    
+                    // Extract EXIF data for images
+                    let location: any = undefined;
+                    let metadata: any = undefined;
+                    
+                    try {
+                      const tags = ExifReader.load(buffer);
+                      
+                      // Extract GPS coordinates
+                      if (tags.GPSLatitude && tags.GPSLongitude) {
+                        const lat = tags.GPSLatitude.description;
+                        const lng = tags.GPSLongitude.description;
+                        location = { lat: parseFloat(lat), lng: parseFloat(lng) };
+                      }
+                      
+                      // Extract camera metadata
+                      metadata = {
+                        camera: tags.Make?.description,
+                        lens: tags.LensModel?.description,
+                        focalLength: tags.FocalLength?.description,
+                        aperture: tags.FNumber?.description,
+                        iso: tags.ISOSpeedRatings?.description,
+                        shutterSpeed: tags.ExposureTime?.description
+                      };
+                    } catch (exifError) {
+                      // No EXIF data or error reading it
+                    }
+                    
                 files.push({
                   path: fullPath,
                   name: entry.name,
@@ -254,6 +284,8 @@ ipcMain.handle('scan-directory', async (_event, directoryPath: string) => {
                   created: stats.birthtime,
                   type: imageExtensions.includes(ext) ? 'image' : 'video',
                   extension: ext,
+                                        location: location,
+                      metadata: metadata
                 });
               } catch (error) {
                 // Skip files we can't access
@@ -382,4 +414,15 @@ ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
 // Get auto-start status
 ipcMain.handle('get-auto-start', () => {
   return app.getLoginItemSettings().openAtLogin;
+
+  // Generate thumbnail for photo
+ipcMain.handle('generate-thumbnail', async (_event, filePath: string) => {
+  try {
+    const buffer = await fs.readFile(filePath);
+    // Return base64 encoded buffer for thumbnail generation in renderer
+    return { success: true, data: buffer.toString('base64') };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
 });

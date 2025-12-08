@@ -66,18 +66,19 @@ export function SunflowerLoader({ size = 48, className = "" }: SunflowerLoaderPr
                   borderRadius: "50% 50% 45% 45%",
                   boxShadow: "0 0 3px rgba(255, 165, 0, 0.5), inset 0 1px 2px rgba(255,255,255,0.3)",
                 }}
+                // ⬅️ UPDATED ANIMATION LOGIC (lines 69-79 in original)
                 animate={{
-                  scaleY: [1, 1.15, 1],
-                  scaleX: [1, 1.1, 1],
-                  opacity: [0.85, 1, 0.85],
+                  opacity: [1, 0, 0, 1], // Petal fades out/in
+                  scaleY: [1, 0.2, 0.2, 1], // Collapses like closing
                 }}
                 transition={{
-                  duration: 0.3,
+                  duration: 0.08,
                   delay: delay,
                   repeat: Infinity,
-                  repeatDelay: cycleDuration - 0.3,
-                  ease: "easeInOut",
+                  repeatDelay: cycleDuration - 0.08,
+                  ease: "linear",
                 }}
+                // ⬆️ END UPDATED ANIMATION LOGIC
               />
             </motion.div>
           );

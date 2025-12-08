@@ -2,6 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from 'electro
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import ExifReader from 'exifreader';
+import { savePhoto, getAllPhotos } from './database'; // ⬅️ ADDED: Database Imports
 
 // ES Module equivalents for __dirname and __filename
 import { fileURLToPath } from 'url';
@@ -9,6 +10,7 @@ import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// --- CRITICAL ERROR HANDLERS (Global) ---
 // CRITICAL: Show error dialog for ANY error during startup
 process.on('uncaughtException', (error) => {
   dialog.showErrorBox(
@@ -44,6 +46,7 @@ function getIconPath(): string | undefined {
   // Return the first path that exists, or undefined
   for (const iconPath of possiblePaths) {
     try {
+      // NOTE: Checking existence synchronously is necessary here
       if (require('fs').existsSync(iconPath)) {
         return iconPath;
       }
@@ -65,15 +68,7 @@ function getIndexPath(): string {
 
 function createWindow() {
   
-// Add error logging to help diagnose startup issues
-process.on('uncaughtException', (error) => {
-  console.error('Uncaught Exception:', error);
-  // In production, you might want to write to a log file
-  if (!isDev) {
-    const logPath = path.join(app.getPath('userData'), 'error.log');
-    require('fs').appendFileSync(logPath, `${new Date().toISOString()} - ${error.stack}\n`);
-  }
-});
+  // ⬅️ REMOVED: Duplicate process.on('uncaughtException', ...) listener inside createWindow
 
   mainWindow = new BrowserWindow({
     title: 'PIXONA - Professional Photo Library',
@@ -247,46 +242,52 @@ ipcMain.handle('scan-directory', async (_event, directoryPath: string) => {
             if (allExtensions.includes(ext)) {
               try {
                 const stats = await fs.stat(fullPath);
-                                    const buffer = await fs.readFile(fullPath);
+                const buffer = await fs.readFile(fullPath);
                     
-                    // Extract EXIF data for images
-                    let location: any = undefined;
-                    let metadata: any = undefined;
+                // Extract EXIF data for images
+                let location: any = undefined;
+                let metadata: any = undefined;
                     
-                    try {
-                      const tags = ExifReader.load(buffer);
+                try {
+                  const tags = ExifReader.load(buffer);
                       
-                      // Extract GPS coordinates
-                      if (tags.GPSLatitude && tags.GPSLongitude) {
-                        const lat = tags.GPSLatitude.description;
-                        const lng = tags.GPSLongitude.description;
-                        location = { lat: parseFloat(lat), lng: parseFloat(lng) };
-                      }
+                  // Extract GPS coordinates
+                  if (tags.GPSLatitude && tags.GPSLongitude) {
+                    const lat = tags.GPSLatitude.description;
+                    const lng = tags.GPSLongitude.description;
+                    location = { lat: parseFloat(lat), lng: parseFloat(lng) };
+                  }
                       
-                      // Extract camera metadata
-                      metadata = {
-                        camera: tags.Make?.description,
-                        lens: tags.LensModel?.description,
-                        focalLength: tags.FocalLength?.description,
-                        aperture: tags.FNumber?.description,
-                        iso: tags.ISOSpeedRatings?.description,
-                        shutterSpeed: tags.ExposureTime?.description
-                      };
-                    } catch (exifError) {
-                      // No EXIF data or error reading it
-                    }
+                  // Extract camera metadata
+                  metadata = {
+                    camera: tags.Make?.description,
+                    lens: tags.LensModel?.description,
+                    focalLength: tags.FocalLength?.description,
+                    aperture: tags.FNumber?.description,
+                    iso: tags.ISOSpeedRatings?.description,
+                    shutterSpeed: tags.ExposureTime?.description
+                  };
+                } catch (exifError) {
+                  // No EXIF data or error reading it
+                }
                     
-                files.push({
+                const fileRecord = {
                   path: fullPath,
                   name: entry.name,
                   size: stats.size,
-                  modified: stats.mtime,
                   created: stats.birthtime,
+                  modified: stats.mtime,
                   type: imageExtensions.includes(ext) ? 'image' : 'video',
                   extension: ext,
-                                        location: location,
-                      metadata: metadata
-                });
+                  location: location,
+                  metadata: metadata
+                };
+                
+                files.push(fileRecord);
+                
+                // ⬅️ ADDED: Save to database
+                await savePhoto(fileRecord);
+                
               } catch (error) {
                 // Skip files we can't access
               }
@@ -300,6 +301,16 @@ ipcMain.handle('scan-directory', async (_event, directoryPath: string) => {
 
     await scanDir(directoryPath);
     return { success: true, files, totalFiles: files.length, directoriesScanned: scannedDirs };
+  } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ ADDED: Get all photos from database
+ipcMain.handle('get-all-photos', async () => {
+  try {
+    const photos = await getAllPhotos();
+    return { success: true, photos };
   } catch (error: any) {
     return { success: false, error: error.message };
   }
@@ -414,8 +425,9 @@ ipcMain.handle('set-auto-start', async (_event, enabled: boolean) => {
 // Get auto-start status
 ipcMain.handle('get-auto-start', () => {
   return app.getLoginItemSettings().openAtLogin;
+}); // ⬅️ FIXED: Closing bracket added here
 
-  // Generate thumbnail for photo
+// Generate thumbnail for photo
 ipcMain.handle('generate-thumbnail', async (_event, filePath: string) => {
   try {
     const buffer = await fs.readFile(filePath);
@@ -424,5 +436,4 @@ ipcMain.handle('generate-thumbnail', async (_event, filePath: string) => {
   } catch (error: any) {
     return { success: false, error: error.message };
   }
-});
 });

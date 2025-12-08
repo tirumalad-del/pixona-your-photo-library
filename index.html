@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PIXONA - Photo Manager</title>
+    <meta name="description" content="Professional desktop photo management application inspired by Apple Photos for Windows" />
+    <meta name="author" content="PIXONA" />
+    <meta name="keywords" content="photo manager, photos, gallery, windows photos, apple photos, image viewer" />
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/icon.png" />
+    <link rel="apple-touch-icon" href="/icon.png" />
+    
+    <!-- Theme Color -->
+    <meta name="theme-color" content="#0a0a0a" />
+    <meta name="color-scheme" content="dark" />
+    
+    <!-- Open Graph -->
+    <meta property="og:title" content="PIXONA - Photo Manager" />
+    <meta property="og:description" content="Professional desktop photo management application for Windows" />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/icon.png" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="PIXONA - Photo Manager" />
+    <meta name="twitter:description" content="Professional desktop photo management application for Windows" />
+    <meta name="twitter:image" content="/icon.png" />
+    
+    <!-- CSP for Electron security - relaxed for web preview -->
+    <!-- <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob: file: https:; media-src 'self' blob: file:; font-src 'self' data:; connect-src 'self' https: wss:;" /> -->
+  </head>
+
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

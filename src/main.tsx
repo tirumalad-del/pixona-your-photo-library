@@ -7,9 +7,9 @@ import { soundManager } from "@/lib/sounds";
 // Initialize database and sound manager on app start
 db.init().then(() => {
   soundManager.init();
-  console.log('PIXONA: Database and sound manager initialized');
+  console.log('✅ Database initialized successfully')
 }).catch(error => {
-  console.error('PIXONA: Failed to initialize database:', error);
+  console.error('❌ Failed to initialize database:', error)
 });
 
 createRoot(document.getElementById("root")!).render(<App />);

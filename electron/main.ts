@@ -3,6 +3,10 @@ import * as path from 'path';
 import * as fs from 'fs/promises';
 import ExifReader from 'exifreader';
 import { savePhoto, getAllPhotos } from './database'; // ⬅️ ADDED: Database Imports
+import { logger } from './logger';
+import { validatePath } from './utils';
+import { FileAccessError, DatabaseError } from './errors';
+import { getPhotosPaginated, getTotalPages, getPhotosByDateRange, getPhotosByCamera, findDuplicates, getPhotoStats } from './database';
 
 // ES Module equivalents for __dirname and __filename
 import { fileURLToPath } from 'url';
@@ -300,6 +304,12 @@ ipcMain.handle('scan-directory', async (_event, directoryPath: string) => {
     }
 
     await scanDir(directoryPath);
+        
+    // ⬅️ ADDED: Batch save all photos at once for better performance
+    if (files.length > 0) {
+      logger.info(`Saving ${files.length} photos to database in batch`);
+      savePhotos(files);
+    }
     return { success: true, files, totalFiles: files.length, directoriesScanned: scannedDirs };
   } catch (error: any) {
     return { success: false, error: error.message };
@@ -312,6 +322,67 @@ ipcMain.handle('get-all-photos', async () => {
     const photos = await getAllPhotos();
     return { success: true, photos };
   } catch (error: any) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ NEW: Get all photos with pagination
+ipcMain.handle('get-all-photos-paginated', async (_event, page: number, pageSize: number = 100) => {
+  try {
+    const photos = getPhotosPaginated(page, pageSize);
+    const totalPages = getTotalPages(pageSize);
+    logger.info(`Retrieved page ${page} of photos`, { count: photos.length, totalPages });
+    return { success: true, photos, totalPages, currentPage: page };
+  } catch (error: any) {
+    logger.error('Failed to get paginated photos', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ NEW: Get photos by date range
+ipcMain.handle('get-photos-by-date', async (_event, startDate: string, endDate: string) => {
+  try {
+    const photos = getPhotosByDateRange(startDate, endDate);
+    logger.info(`Retrieved photos by date range`, { startDate, endDate, count: photos.length });
+    return { success: true, photos };
+  } catch (error: any) {
+    logger.error('Failed to get photos by date', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ NEW: Get photos by camera
+ipcMain.handle('get-photos-by-camera', async (_event, camera: string) => {
+  try {
+    const photos = getPhotosByCamera(camera);
+    logger.info(`Retrieved photos by camera`, { camera, count: photos.length });
+    return { success: true, photos };
+  } catch (error: any) {
+    logger.error('Failed to get photos by camera', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ NEW: Find duplicate photos
+ipcMain.handle('find-duplicates', async () => {
+  try {
+    const duplicates = findDuplicates();
+    logger.info(`Found duplicate photos`, { count: duplicates.length });
+    return { success: true, duplicates };
+  } catch (error: any) {
+    logger.error('Failed to find duplicates', error);
+    return { success: false, error: error.message };
+  }
+});
+
+// ⬅️ NEW: Get photo statistics
+ipcMain.handle('get-photo-stats', async () => {
+  try {
+    const stats = getPhotoStats();
+    logger.info('Retrieved photo statistics', stats);
+    return { success: true, stats };
+  } catch (error: any) {
+    logger.error('Failed to get photo statistics', error);
     return { success: false, error: error.message };
   }
 });

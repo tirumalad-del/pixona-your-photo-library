@@ -17,7 +17,10 @@
     "electron:build": "vite build && electron-builder",
     "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:8080 && electron .\"",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview,
+    "postinstall": "electron-builder install-app-deps",
+    "rebuild": "electron-rebuild -f -w better-sqlite3",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

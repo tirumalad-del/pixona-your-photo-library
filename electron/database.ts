@@ -169,4 +169,60 @@ export { db };
 // Cleanup on app exit
 process.on('exit', () => {
   db.close();
+  
+// ====== NEW FUNCTIONS - ADDED FOR 10-POINT IMPROVEMENT ======
+
+// Pagination support
+export function getPhotosPaginated(page: number, pageSize: number = 100): PhotoRecord[] {
+  const offset = (page - 1) * pageSize;
+  const stmt = db.prepare('SELECT * FROM photos ORDER BY modified DESC LIMIT ? OFFSET ?');
+  return stmt.all(pageSize, offset) as PhotoRecord[];
+}
+
+// Get total pages
+export function getTotalPages(pageSize: number = 100): number {
+  const count = getPhotoCount();
+  return Math.ceil(count / pageSize);
+}
+
+// Filter by date range
+export function getPhotosByDateRange(startDate: string, endDate: string): PhotoRecord[] {
+  const stmt = db.prepare('SELECT * FROM photos WHERE modified BETWEEN ? AND ? ORDER BY modified DESC');
+  return stmt.all(startDate, endDate) as PhotoRecord[];
+}
+
+// Filter by camera
+export function getPhotosByCamera(camera: string): PhotoRecord[] {
+  const stmt = db.prepare('SELECT * FROM photos WHERE camera = ? ORDER BY modified DESC');
+  return stmt.all(camera) as PhotoRecord[];
+}
+
+// Find duplicates (same name and size)
+export function findDuplicates(): PhotoRecord[] {
+  const stmt = db.prepare(`
+    SELECT p1.* 
+    FROM photos p1
+    INNER JOIN photos p2 ON p1.size = p2.size AND p1.name = p2.name AND p1.id < p2.id
+    GROUP BY p1.id
+    ORDER BY p1.name
+  `);
+  return stmt.all() as PhotoRecord[];
+}
+
+// Get photo statistics
+export function getPhotoStats() {
+  const totalPhotos = db.prepare('SELECT COUNT(*) as count FROM photos').get() as { count: number };
+  const totalSize = db.prepare('SELECT SUM(size) as total FROM photos').get() as { total: number };
+  const byType = db.prepare('SELECT type, COUNT(*) as count FROM photos GROUP BY type').all();
+  const byCamera = db.prepare('SELECT camera, COUNT(*) as count FROM photos WHERE camera IS NOT NULL GROUP BY camera ORDER BY count DESC LIMIT 10').all();
+  const withLocation = db.prepare('SELECT COUNT(*) as count FROM photos WHERE latitude IS NOT NULL').get() as { count: number };
+  
+  return {
+    totalPhotos: totalPhotos.count,
+    totalSize: totalSize.total || 0,
+    byType,
+    byCamera,
+    photosWithLocation: withLocation.count
+  };
+}
 });

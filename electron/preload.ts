@@ -52,6 +52,24 @@ contextBridge.exposeInMainWorld('electron', {
   setAutoStart: (enabled: boolean) =>
     ipcRenderer.invoke('set-auto-start', enabled),
   getAutoStart: () => ipcRenderer.invoke('get-auto-start'),
+    
+  // ⬅️ NEW: Paginated photo retrieval
+  getAllPhotosPaginated: (page: number, pageSize?: number) =>
+    ipcRenderer.invoke('get-all-photos-paginated', page, pageSize),
+  
+  // ⬅️ NEW: Filter by date range
+  getPhotosByDate: (startDate: string, endDate: string) =>
+    ipcRenderer.invoke('get-photos-by-date', startDate, endDate),
+  
+  // ⬅️ NEW: Filter by camera
+  getPhotosByCamera: (camera: string) =>
+    ipcRenderer.invoke('get-photos-by-camera', camera),
+  
+  // ⬅️ NEW: Find duplicates
+  findDuplicates: () => ipcRenderer.invoke('find-duplicates'),
+  
+  // ⬅️ NEW: Get statistics
+  getPhotoStats: () => ipcRenderer.invoke('get-photo-stats'),
   
   // Listen to scan progress
   onScanProgress: (callback: (progress: any) => void) => {
@@ -91,6 +109,18 @@ export interface ElectronAPI {
   getAppVersion: () => Promise<string>;
   setAutoStart: (enabled: boolean) => Promise<{ success: boolean; error?: string }>;
   getAutoStart: () => Promise<boolean>;
+    // ⬅️ NEW METHODS:
+  getAllPhotosPaginated: (page: number, pageSize?: number) => Promise<{
+    success: boolean;
+    photos?: any[];
+    totalPages?: number;
+    currentPage?: number;
+    error?: string;
+  }>;
+  getPhotosByDate: (startDate: string, endDate: string) => Promise<{ success: boolean; photos?: any[]; error?: string }>;
+  getPhotosByCamera: (camera: string) => Promise<{ success: boolean; photos?: any[]; error?: string }>;
+  findDuplicates: () => Promise<{ success: boolean; duplicates?: any[]; error?: string }>;
+  getPhotoStats: () => Promise<{ success: boolean; stats?: any; error?: string }>;
   onScanProgress: (callback: (progress: any) => void) => () => void;
     generateThumbnail: (filePath: string) => ipcRenderer.invoke('generate-thumbnail', filePath)
 }

@@ -8,19 +8,15 @@
   "main": "dist-electron/main.js",
   "scripts": {
     "dev": "vite",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:8080 && electron .\"",
     "build": "vite build && electron-builder",
     "build:dev": "vite build --mode development",
     "build:win": "npm run build -- --win",
     "build:mac": "npm run build -- --mac",
     "build:linux": "npm run build -- --linux",
     "build:dir": "npm run build -- --dir",
-    "electron:build": "vite build && electron-builder",
-    "electron:dev": "concurrently \"vite\" \"wait-on http://localhost:8080 && electron .\"",
     "lint": "eslint .",
-    "preview": "vite preview",
-    "postinstall": "electron-builder install-app-deps",
-    "rebuild": "electron-rebuild -f -w better-sqlite3",
-    "typecheck": "tsc --noEmit"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
@@ -59,9 +55,9 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.1.1",
     "date-fns": "^3.6.0",
+    "electron-store": "^8.2.0",
     "embla-carousel-react": "^8.6.0",
     "exifreader": "^4.23.8",
-    "better-sqlite3": "^11.8.0",
     "framer-motion": "^12.23.24",
     "input-otp": "^1.4.2",
     "leaflet": "^1.9.4",
@@ -85,7 +81,6 @@
     "@eslint/js": "^9.32.0",
     "@tailwindcss/typography": "^0.5.16",
     "@types/node": "^22.16.5",
-    "@types/better-sqlite3": "^7.6.11",
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
@@ -113,7 +108,6 @@
     "minimist": "^1.2.8",
     "glob": "^11.0.0",
     "js-yaml": "^4.1.1",
-    "esbuild": "0.24.0",
     "tough-cookie": "^5.0.0",
     "cacache": "^19.0.1"
   }

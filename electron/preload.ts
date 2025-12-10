@@ -81,6 +81,10 @@ contextBridge.exposeInMainWorld('electron', {
       ipcRenderer.removeListener('scan-progress', subscription);
     };
   },
+    
+  // Generate thumbnail
+  generateThumbnail: (filePath: string) =>
+    ipcRenderer.invoke('generate-thumbnail', filePath),
 });
 
 // TypeScript type definitions for the exposed API
@@ -122,8 +126,8 @@ export interface ElectronAPI {
   findDuplicates: () => Promise<{ success: boolean; duplicates?: any[]; error?: string }>;
   getPhotoStats: () => Promise<{ success: boolean; stats?: any; error?: string }>;
   onScanProgress: (callback: (progress: any) => void) => () => void;
-    generateThumbnail: (filePath: string) => ipcRenderer.invoke('generate-thumbnail', filePath)
 }
+  generateThumbnail: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
 
 declare global {
   interface Window {

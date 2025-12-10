@@ -2,7 +2,7 @@ import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from 'electro
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import ExifReader from 'exifreader';
-import { savePhoto, getAllPhotos } from './database'; // ⬅️ ADDED: Database Imports
+import { savePhoto, getAllPhotos, savePhotos } from './database'; // ⬅️ ADDED: Database Imports
 import { logger } from './logger';
 import { validatePath } from './utils';
 import { FileAccessError, DatabaseError } from './errors';

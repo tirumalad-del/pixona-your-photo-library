@@ -169,6 +169,7 @@ export { db };
 // Cleanup on app exit
 process.on('exit', () => {
   db.close();
+  });
   
 // ====== NEW FUNCTIONS - ADDED FOR 10-POINT IMPROVEMENT ======
 
@@ -225,4 +226,4 @@ export function getPhotoStats() {
     photosWithLocation: withLocation.count
   };
 }
-});
+

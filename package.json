@@ -114,6 +114,7 @@
     "glob": "^11.0.0",
     "js-yaml": "^4.1.1",
     "esbuild": "0.24.0",
-    "tough-cookie": "^5.0.0"
+    "tough-cookie": "^5.0.0",
+    "cacache": "^19.0.1"
   }
 }

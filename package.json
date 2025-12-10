@@ -17,7 +17,31 @@
     "build:dir": "npm run build -- --dir",
     "lint": "eslint .",
     "preview": "vite preview"
-  },
+  },{
+  "name": "pixona-photo-library",
+  "plugins": {
+    "electron": {
+      "main": {
+        "vite": {
+          "build": {
+            "rollupOptions": {
+              "external": ["better-sqlite3"]
+            }
+          }
+        }
+      },
+      "preload": {
+        "vite": {
+          "build": {
+            "rollupOptions": {
+              "external": ["better-sqlite3"]
+            }
+          }
+        }
+      }
+    }
+  }
+}
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",

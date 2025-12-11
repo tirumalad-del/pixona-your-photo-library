@@ -13,7 +13,8 @@
     "public/**/*",
     "package.json"
   ],
-  "asar": false,  "compression": "normal",
+  "asar": false,
+  "compression": "normal",
   "win": {
     "target": "nsis",
     "icon": "public/icon.ico",
@@ -33,45 +34,6 @@
     "deleteAppDataOnUninstall": false,
     "runAfterFinish": true,
     "menuCategory": "Photography"
-  },
-  "mac": {
-    "target": ["dmg", "zip"],
-    "icon": "public/icon.icns",
-    "category": "public.app-category.photography",
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "hardenedRuntime": true,
-    "gatekeeperAssess": false
-  },
-  "dmg": {
-    "contents": [
-      {
-        "x": 130,
-        "y": 220
-      },
-      {
-        "x": 410,
-        "y": 220,
-        "type": "link",
-        "path": "/Applications"
-      }
-    ],
-    "window": {
-      "width": 540,
-      "height": 380
-    }
-  },
-  "linux": {
-    "target": ["AppImage", "deb", "rpm"],
-    "icon": "public/icon.png",
-    "category": "Graphics",
-    "artifactName": "${productName}-${version}-${arch}.${ext}",
-    "desktop": {
-      "entry": {
-        "Name": "PIXONA",
-        "Comment": "Professional Photo Management",
-        "Categories": "Graphics;Photography;Viewer"
-      }
-    }
   },
   "extraResources": [
     {

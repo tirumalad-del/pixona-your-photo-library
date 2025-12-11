@@ -34,7 +34,22 @@
     "deleteAppDataOnUninstall": false,
     "runAfterFinish": true,
     "menuCategory": "Photography"
+  },,
+  "mac": {
+    "category": "public.app-category.photography",
+    "target": ["dmg", "zip"],
+    "icon": "public/icon.icns",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "build/entitlements.mac.plist",
+    "entitlementsInherit": "build/entitlements.mac.plist"
   },
+  "linux": {
+    "target": ["AppImage", "deb"],
+    "icon": "public/icon.png",
+    "category": "Graphics",
+    "maintainer": "Tirumala D <tirumalad.del@gmail.com>"
+  }
   "extraResources": [
     {
       "from": "public",

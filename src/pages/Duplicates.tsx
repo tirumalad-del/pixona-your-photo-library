@@ -25,30 +25,46 @@ interface DuplicateGroup {
 export default function Duplicates() {
   const [scanning, setScanning] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [progressText, setProgressText] = useState('');
   const [duplicateGroups, setDuplicateGroups] = useState<DuplicateGroup[]>([]);
   const [selectedForDeletion, setSelectedForDeletion] = useState<Set<string>>(new Set());
 
   useEffect(() => {
-    scanForDuplicates();
+    // Don't auto-scan on mount to avoid errors
+    // User can click the scan button when ready
   }, []);
 
   const scanForDuplicates = async () => {
     setScanning(true);
     setProgress(0);
+    setProgressText('Loading photos...');
     soundManager.play('select');
 
     try {
       const photos = await db.getAllPhotos();
       const imagePhotos = photos.filter(p => p.type === 'image');
-      
-      setProgress(30);
 
-      // Find similar images using perceptual hashing
+      if (imagePhotos.length === 0) {
+        toast.info("No photos to scan for duplicates");
+        setScanning(false);
+        return;
+      }
+
+      setProgress(10);
+      setProgressText(`Analyzing ${imagePhotos.length} photos...`);
+
+      // Find similar images using perceptual hashing with progress
       const similarGroups = await perceptualHash.findSimilarImages(
-        imagePhotos.map(p => ({ id: p.id, path: p.path, hash: p.hash }))
+        imagePhotos.map(p => ({ id: p.id, path: p.path, hash: p.hash })),
+        (current, total) => {
+          const percent = 10 + Math.floor((current / total) * 70);
+          setProgress(percent);
+          setProgressText(`Processing ${current} of ${total} photos...`);
+        }
       );
 
-      setProgress(70);
+      setProgress(85);
+      setProgressText('Organizing results...');
 
       // Convert to duplicate groups
       const groups: DuplicateGroup[] = [];
@@ -79,9 +95,11 @@ export default function Duplicates() {
 
       setDuplicateGroups(groups);
       setProgress(100);
-      
+      setProgressText('Complete!');
+
       if (groups.length > 0) {
-        toast.success(`Found ${groups.reduce((acc, g) => acc + g.duplicates.length, 0)} duplicate photos`);
+        const totalDups = groups.reduce((acc, g) => acc + g.duplicates.length, 0);
+        toast.success(`Found ${totalDups} duplicate photo${totalDups > 1 ? 's' : ''} in ${groups.length} group${groups.length > 1 ? 's' : ''}`);
         soundManager.play('success');
       } else {
         toast.info("No duplicates found!");
@@ -92,6 +110,7 @@ export default function Duplicates() {
       soundManager.play('error');
     } finally {
       setScanning(false);
+      setProgressText('');
     }
   };
 
@@ -129,9 +148,9 @@ export default function Duplicates() {
 
         // Remove from database
         await db.deletePhotos(Array.from(selectedForDeletion));
-        
+
         // Update UI
-        setDuplicateGroups(prev => 
+        setDuplicateGroups(prev =>
           prev
             .map(group => ({
               ...group,
@@ -139,7 +158,7 @@ export default function Duplicates() {
             }))
             .filter(group => group.duplicates.length > 0)
         );
-        
+
         setSelectedForDeletion(new Set());
         toast.success(`${selectedForDeletion.size} photo${selectedForDeletion.size > 1 ? 's' : ''} moved to trash`);
         soundManager.play('delete');
@@ -159,13 +178,16 @@ export default function Duplicates() {
         title="Duplicates"
         subtitle="Find and manage duplicate photos"
       />
-      
+
       <div className="flex-1 overflow-auto">
         {scanning ? (
-          <div className="flex flex-col items-center justify-center h-full">
+          <div className="flex flex-col items-center justify-center h-full space-y-4">
             <Scan className="w-16 h-16 text-app-accent mb-4 animate-pulse" />
-            <p className="text-app-text-muted mb-4">Scanning for duplicates...</p>
-            <Progress value={progress} className="w-64" />
+            <p className="text-app-text-muted text-center">{progressText}</p>
+            <div className="w-80 space-y-2">
+              <Progress value={progress} className="h-2" />
+              <p className="text-xs text-app-text-muted text-center">{progress}%</p>
+            </div>
           </div>
         ) : duplicateGroups.length === 0 ? (
           <div className="h-full flex items-center justify-center">
@@ -177,10 +199,10 @@ export default function Duplicates() {
                 Duplicate Detection
               </h3>
               <p className="text-app-text-muted mb-6">
-                Advanced duplicate detection using file hashes and perceptual hashing 
+                Advanced duplicate detection using perceptual hashing
                 to find exact and similar photos. Free up storage space safely.
               </p>
-              <Button 
+              <Button
                 className="bg-app-accent hover:bg-app-accent-hover"
                 onClick={scanForDuplicates}
               >
@@ -201,20 +223,20 @@ export default function Duplicates() {
                 </p>
               </div>
               <div className="flex gap-2">
-                <Button 
+                <Button
                   variant="outline"
                   onClick={scanForDuplicates}
                 >
                   <Scan className="w-4 h-4 mr-2" />
                   Scan Again
                 </Button>
-                <Button 
+                <Button
                   className="bg-destructive hover:bg-destructive/90"
                   onClick={handleDeleteSelected}
                   disabled={selectedForDeletion.size === 0}
                 >
                   <Trash2 className="w-4 h-4 mr-2" />
-                  Delete Selected
+                  Delete Selected ({selectedForDeletion.size})
                 </Button>
               </div>
             </div>
@@ -224,20 +246,24 @@ export default function Duplicates() {
                 key={group.original.id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: groupIdx * 0.1 }}
+                transition={{ delay: groupIdx * 0.05 }}
                 className="bg-app-surface rounded-lg p-4 border border-app-border"
               >
                 <h4 className="text-sm font-medium text-app-text mb-3">
-                  Duplicate Group {groupIdx + 1}
+                  Duplicate Group {groupIdx + 1} ({group.duplicates.length} duplicate{group.duplicates.length > 1 ? 's' : ''})
                 </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
                   {/* Original */}
                   <div className="space-y-2">
-                    <div className="aspect-square bg-app-bg rounded overflow-hidden border-2 border-app-accent">
+                    <div className="aspect-square bg-app-bg rounded overflow-hidden border-2 border-app-accent relative">
                       <img
-                        src={group.original.url}
+                        src={`pixona-file://${group.original.url}`}
                         alt="Original"
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          // Fallback: hide broken images
+                          (e.target as HTMLImageElement).style.display = 'none';
+                        }}
                       />
                     </div>
                     <p className="text-xs text-app-text text-center font-medium">
@@ -248,23 +274,26 @@ export default function Duplicates() {
                   {/* Duplicates */}
                   {group.duplicates.map((duplicate) => (
                     <div key={duplicate.id} className="space-y-2 relative">
-                      <div 
+                      <div
                         className={`aspect-square bg-app-bg rounded overflow-hidden cursor-pointer border-2 transition-colors ${
-                          selectedForDeletion.has(duplicate.id) 
-                            ? 'border-destructive' 
+                          selectedForDeletion.has(duplicate.id)
+                            ? 'border-destructive'
                             : 'border-transparent hover:border-app-border'
                         }`}
                         onClick={() => toggleSelection(duplicate.id)}
                       >
                         <img
-                          src={duplicate.url}
+                          src={`pixona-file://${duplicate.url}`}
                           alt="Duplicate"
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                          }}
                         />
                       </div>
                       {selectedForDeletion.has(duplicate.id) && (
-                        <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center pointer-events-none">
-                          <Trash2 className="w-8 h-8 text-destructive" />
+                        <div className="absolute inset-0 bg-destructive/20 flex items-center justify-center pointer-events-none rounded">
+                          <Trash2 className="w-8 h-8 text-destructive drop-shadow-lg" />
                         </div>
                       )}
                       <p className="text-xs text-app-text-muted text-center">

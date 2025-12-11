@@ -1,9 +1,19 @@
 import Database from 'better-sqlite3';
 import { app } from 'electron';
 import * as path from 'path';
+import * as fs from 'fs';
 
 // Get database path in user data directory
-const dbPath = path.join(app.getPath('userData'), 'pixona.db');
+const userDataPath = app.getPath('userData');
+const dbPath = path.join(userDataPath, 'pixona.db');
+
+// Ensure directory exists
+if (!fs.existsSync(userDataPath)) {
+  fs.mkdirSync(userDataPath, { recursive: true });
+}
+
+console.log(`Database path: ${dbPath}`);
+
 const db = new Database(dbPath);
 
 // Enable WAL mode for better performance
@@ -38,13 +48,15 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_photos_location ON photos(latitude, longitude);
 `);
 
+console.log('Database tables created/verified');
+
 export interface PhotoRecord {
   id?: number;
   path: string;
   name: string;
   size: number;
-  created: string;
-  modified: string;
+  created: string | Date;
+  modified: string | Date;
   type: string;
   extension: string;
   latitude?: number;
@@ -57,6 +69,23 @@ export interface PhotoRecord {
   shutter_speed?: string;
   scanned_at?: string;
   indexed_at?: string;
+  location?: { lat: number; lng: number };
+  metadata?: {
+    camera?: string;
+    lens?: string;
+    focalLength?: string;
+    aperture?: string;
+    iso?: string;
+    shutterSpeed?: string;
+  };
+}
+
+// Helper to convert Date to ISO string
+function toISOString(date: string | Date): string {
+  if (date instanceof Date) {
+    return date.toISOString();
+  }
+  return date;
 }
 
 // Save a single photo to database
@@ -72,8 +101,8 @@ export function savePhoto(photo: any): void {
     photo.path,
     photo.name,
     photo.size,
-    photo.created,
-    photo.modified,
+    toISOString(photo.created),
+    toISOString(photo.modified),
     photo.type,
     photo.extension,
     photo.location?.lat,
@@ -102,8 +131,8 @@ export function savePhotos(photos: any[]): void {
         photo.path,
         photo.name,
         photo.size,
-        photo.created,
-        photo.modified,
+        toISOString(photo.created),
+        toISOString(photo.modified),
         photo.type,
         photo.extension,
         photo.location?.lat,
@@ -163,16 +192,6 @@ export function clearAllPhotos(): void {
   db.exec('DELETE FROM photos');
 }
 
-// Export the database instance
-export { db };
-
-// Cleanup on app exit
-process.on('exit', () => {
-  db.close();
-  });
-  
-// ====== NEW FUNCTIONS - ADDED FOR 10-POINT IMPROVEMENT ======
-
 // Pagination support
 export function getPhotosPaginated(page: number, pageSize: number = 100): PhotoRecord[] {
   const offset = (page - 1) * pageSize;
@@ -227,3 +246,11 @@ export function getPhotoStats() {
   };
 }
 
+// Export the database instance
+export { db };
+
+// Cleanup on app exit
+app.on('quit', () => {
+  db.close();
+  console.log('Database closed');
+});

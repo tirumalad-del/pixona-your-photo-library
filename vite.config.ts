@@ -22,6 +22,10 @@ export default defineConfig(({ mode }) => ({
           build: {
             outDir: "dist-electron",
             rollupOptions: {
+              external: [
+                'better-sqlite3',
+                'exifreader',
+              ],
               output: {
                 entryFileNames: "[name].js",
               },
@@ -55,5 +59,8 @@ export default defineConfig(({ mode }) => ({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+  },
+  optimizeDeps: {
+    exclude: ['better-sqlite3', 'exifreader'],
   },
 }));

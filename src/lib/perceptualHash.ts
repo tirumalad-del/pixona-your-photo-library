@@ -22,7 +22,7 @@ export class PerceptualHashService {
       await new Promise<void>((resolve, reject) => {
         img.onload = () => resolve();
         img.onerror = (e) => {
-          console.error('Image load error:', e);
+          console.error('Image load error for:', imagePath);
           reject(new Error('Failed to load image'));
         };
         img.src = dataUrl;
@@ -54,7 +54,7 @@ export class PerceptualHashService {
         const brightness = (data[i] + data[i + 1] + data[i + 2]) / 3;
         hash += brightness >= average ? '1' : '0';
       }
-
+      
       return hash;
     } catch (error) {
       console.error('Failed to generate perceptual hash for', imagePath, ':', error);
@@ -64,7 +64,7 @@ export class PerceptualHashService {
 
   hammingDistance(hash1: string, hash2: string): number {
     if (hash1.length !== hash2.length) return Infinity;
-
+    
     let distance = 0;
     for (let i = 0; i < hash1.length; i++) {
       if (hash1[i] !== hash2[i]) distance++;
@@ -110,7 +110,7 @@ export class PerceptualHashService {
       if (processed.has(id1)) continue;
 
       const similar: string[] = [id1];
-
+      
       for (const [id2, hash2] of hashes.entries()) {
         if (id1 !== id2 && !processed.has(id2)) {
           if (this.areSimilar(hash1, hash2)) {

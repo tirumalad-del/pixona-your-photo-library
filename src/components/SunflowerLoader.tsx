@@ -16,35 +16,21 @@ export function SunflowerLoader({ size = 48, className = "" }: SunflowerLoaderPr
       className={`relative ${className}`}
       style={{ width: size, height: size }}
     >
-      {/* Glowing background */}
-      <motion.div
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: "radial-gradient(circle, rgba(255, 200, 50, 0.3) 0%, rgba(255, 150, 0, 0.15) 50%, transparent 70%)",
-          filter: "blur(6px)",
-        }}
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.4, 0.7, 0.4],
-        }}
+      {/* Rotating petals container - smooth continuous rotation like Microsoft loader */}
+      <motion.div 
+        className="absolute inset-0"
+        animate={{ rotate: 360 }}
         transition={{
-          duration: 3,
+          duration: 2,
           repeat: Infinity,
-          ease: "easeInOut",
+          ease: "linear"
         }}
-      />
-
-      {/* All 24 petals - one animates at a time */}
-      <div className="absolute inset-0">
+      >
         {Array.from({ length: petalCount }).map((_, i) => {
           const angle = (i * 360) / petalCount;
-          // Each petal animates for a short duration, then the next one starts
-          // Total cycle time = petalCount * 0.15s = 3.6s for full rotation
-          const delay = i * 0.15;
-          const cycleDuration = petalCount * 0.15;
           
           return (
-            <motion.div
+            <div
               key={i}
               className="absolute"
               style={{
@@ -58,32 +44,19 @@ export function SunflowerLoader({ size = 48, className = "" }: SunflowerLoaderPr
                 transform: `rotate(${angle}deg)`,
               }}
             >
-              {/* Petal with sequential animation */}
-              <motion.div
+              {/* Static petal - rotation handled by parent container */}
+              <div
                 className="w-full h-full"
                 style={{
                   background: "linear-gradient(180deg, #FFE135 0%, #FFD700 30%, #FFA500 70%, #FF8C00 100%)",
                   borderRadius: "50% 50% 45% 45%",
                   boxShadow: "0 0 3px rgba(255, 165, 0, 0.5), inset 0 1px 2px rgba(255,255,255,0.3)",
                 }}
-                // ⬅️ UPDATED ANIMATION LOGIC (lines 69-79 in original)
-                animate={{
-                  opacity: [1, 0, 0, 1], // Petal fades out/in
-                  scaleY: [1, 0.2, 0.2, 1], // Collapses like closing
-                }}
-                transition={{
-                  duration: 0.08,
-                  delay: delay,
-                  repeat: Infinity,
-                  repeatDelay: cycleDuration - 0.08,
-                  ease: "linear",
-                }}
-                // ⬆️ END UPDATED ANIMATION LOGIC
               />
-            </motion.div>
+            </div>
           );
         })}
-      </div>
+      </motion.div>
 
       {/* Center of sunflower */}
       <motion.div

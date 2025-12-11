@@ -1,10 +1,9 @@
-import { useState } from "react";
+import { useState } fro, useEffectm "react";
 import { ViewHeader } from "@/components/ViewHeader";
 import { PhotoGrid } from "@/components/PhotoGrid";
 import { StatusBar } from "@/components/StatusBar";
 import { Button } from "@/components/ui/button";
 import { BatchEditDialog } from "@/components/BatchEditDialog";
-import { mockPhotos } from "@/lib/mockData";
 import { Edit } from "lucide-react";
 
 export default function Library() {
@@ -12,6 +11,23 @@ export default function Library() {
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [batchEditOpen, setBatchEditOpen] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Load photos from database on mount
+  useEffect(() => {
+    const loadPhotos = async () => {
+      if (window.electron && window.electron.getAllPhotos) {
+        setLoading(true);
+        const result = await window.electron.getAllPhotos();
+        if (result.success && result.photos) {
+          setPhotos(result.photos);
+        }
+        setLoading(false);
+      }
+    };
+    loadPhotos();
+  }, []);
 
   const handlePhotoClick = (id: string) => {
     if (selectionMode) {
@@ -72,7 +88,7 @@ export default function Library() {
 
       <div className="flex-1 overflow-auto">
         <PhotoGrid 
-          photos={mockPhotos}
+          photos={photos}
           selectionMode={selectionMode}
           selectedIds={selectedIds}
           onPhotoClick={handlePhotoClick}
@@ -80,7 +96,7 @@ export default function Library() {
       </div>
 
       <StatusBar 
-        itemCount={mockPhotos.length} 
+        itemCount={photos.length} 
         viewMode="Grid"
         actions={
           <Button

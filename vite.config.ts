@@ -25,6 +25,10 @@ export default defineConfig(({ mode }) => ({
               external: [
                 'better-sqlite3',
                 'exifreader',
+                'electron',
+                'fs',
+                'path',
+                'crypto',
               ],
               output: {
                 entryFileNames: "[name].js",
@@ -61,6 +65,6 @@ export default defineConfig(({ mode }) => ({
     emptyOutDir: true,
   },
   optimizeDeps: {
-    exclude: ['better-sqlite3', 'exifreader'],
+    exclude: ['better-sqlite3', 'exifreader', 'electron'],
   },
 }));

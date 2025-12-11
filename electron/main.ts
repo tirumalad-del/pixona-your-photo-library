@@ -148,9 +148,8 @@ if (!gotTheLock) {
 }
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  }// Windows-only app - always quit
+  app.quit();
 });
 
 // IPC Handlers for File System Access
@@ -170,10 +169,6 @@ ipcMain.handle('get-drives', async () => {
         }
       }
       return { success: true, drives };
-    } else {
-      // For macOS/Linux, return common locations
-      return { success: true, drives: ['/home', '/Users'] };
-    }
   } catch (error: any) {
     return { success: false, error: error.message };
   }

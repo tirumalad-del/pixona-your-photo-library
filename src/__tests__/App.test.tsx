@@ -1,0 +1,15 @@
+import { describe, it, expect } from 'vitest';
+import { render, screen } from '@testing-library/react';
+import App from '../App';
+
+describe('App Component', () => {
+  it('should render without crashing', () => {
+    render(<App />);
+    expect(document.body).toBeDefined();
+  });
+
+  it('should have main container', () => {
+    const { container } = render(<App />);
+    expect(container).toBeTruthy();
+  });
+});

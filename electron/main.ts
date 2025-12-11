@@ -167,7 +167,7 @@ ipcMain.handle('get-drives', async () => {
         } catch {
           // Drive doesn't exist or not accessible
         }
-      turn { success: true, drives };
+      return { success: true, drives };
   } catch (error: any) {
     return { success: false, error: error.message };
   }

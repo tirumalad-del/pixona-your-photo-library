@@ -12,34 +12,45 @@
     "build": "vite build && electron-builder",
     "build:dev": "vite build --mode development",
     "build:win": "npm run build -- --win",
+    "build:mac": "npm run build -- --mac",
+    "build:linux": "npm run build -- --linux",
     "build:dir": "npm run build -- --dir",
     "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "format:check": "prettier --check \"src/**/*.{js,jsx,ts,tsx,json,css,scss,md}\"",
+    "test": "vitest",
+    "test:unit": "vitest run",
+    "test:watch": "vitest watch",
+    "test:coverage": "vitest run --coverage",
+    "test:ui": "vitest --ui",
     "preview": "vite preview"
-  },{
-  "name": "pixona-photo-library",
-  "plugins": {
-    "electron": {
-      "main": {
-        "vite": {
-          "build": {
-            "rollupOptions": {
-              "external": ["better-sqlite3"]
+  },
+  "forge": {
+    "name": "pixona-photo-library",
+    "plugins": {
+      "electron": {
+        "main": {
+          "vite": {
+            "build": {
+              "rollupOptions": {
+                "external": ["better-sqlite3"]
+              }
             }
           }
-        }
-      },
-      "preload": {
-        "vite": {
-          "build": {
-            "rollupOptions": {
-              "external": ["better-sqlite3"]
+        },
+        "preload": {
+          "vite": {
+            "build": {
+              "rollupOptions": {
+                "external": ["better-sqlite3"]
+              }
             }
           }
         }
       }
     }
-  }
-}
+  },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
@@ -89,7 +100,7 @@
     "react": "^18.3.1",
     "react-day-picker": "^8.10.1",
     "react-dom": "^18.3.1",
-    "react-hook-form": "^7.61.1",
+    "react-hook-form": "^7.61.17",
     "react-resizable-panels": "^2.1.9",
     "react-router-dom": "^6.30.1",
     "recharts": "^2.15.4",
@@ -106,6 +117,7 @@
     "@types/react": "^18.3.23",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react-swc": "^3.11.0",
+    "@vitest/ui": "^2.1.8",
     "autoprefixer": "^10.4.21",
     "concurrently": "^9.1.0",
     "electron": "^39.2.4",
@@ -114,14 +126,19 @@
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "globals": "^15.15.0",
+    "happy-dom": "^15.11.7",
+    "husky": "^9.1.7",
+    "lint-staged": "^15.2.11",
     "lovable-tagger": "^1.1.11",
     "postcss": "^8.5.6",
+    "prettier": "^3.4.2",
     "tailwindcss": "^3.4.17",
     "typescript": "^5.8.3",
     "typescript-eslint": "^8.38.0",
     "vite": "^5.4.19",
     "vite-plugin-electron": "^0.29.0",
     "vite-plugin-electron-renderer": "^0.14.6",
+    "vitest": "^2.1.8",
     "wait-on": "^8.0.1"
   },
   "overrides": {

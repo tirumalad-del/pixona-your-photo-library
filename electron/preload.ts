@@ -70,6 +70,9 @@ contextBridge.exposeInMainWorld('electron', {
   
   // ⬅️ NEW: Get statistics
   getPhotoStats: () => ipcRenderer.invoke('get-photo-stats'),
+
+  // ⬅️ NEW: Get all photos from database
+  getAllPhotos: () => ipcRenderer.invoke('get-all-photos'),
   
   // Listen to scan progress
   onScanProgress: (callback: (progress: any) => void) => {
@@ -126,8 +129,10 @@ export interface ElectronAPI {
   findDuplicates: () => Promise<{ success: boolean; duplicates?: any[]; error?: string }>;
   getPhotoStats: () => Promise<{ success: boolean; stats?: any; error?: string }>;
   onScanProgress: (callback: (progress: any) => void) => () => void;
-}
+  // ⬅️ NEW: Get all photos
+  getAllPhotos: () => Promise<{ success: boolean; photos?: any[]; error?: string }>;
   generateThumbnail: (filePath: string) => Promise<{ success: boolean; data?: string; error?: string }>;
+}
 
 declare global {
   interface Window {

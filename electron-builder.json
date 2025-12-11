@@ -1,61 +1,44 @@
-{
-  "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/master/packages/app-builder-lib/scheme.json",
-  "appId": "com.pixona.photolib",
-  "productName": "PIXONA",
-  "copyright": "Copyright © 2024 PIXONA",
-  "directories": {
-    "output": "release",
-    "buildResources": "build"
+import { defineConfig } from 'vite';
+import react from '@vitejs/plugin-react';
+import path from 'path';
+
+// https://vitejs.dev/config/
+export default defineConfig({
+  plugins: [react()],
+  
+  server: {
+    port: 8080,
+    strictPort: true,
   },
-  "files": [
-    "dist/**/*",
-    "dist-electron/**/*",
-    "public/**/*",
-    "package.json"
-  ],
-  "asar": false,
-  "compression": "normal",
-  "win": {
-    "target": "nsis",
-    "icon": "public/icon.ico",
-    "artifactName": "${productName}-${version}-Setup.${ext}",
-    "requestedExecutionLevel": "asInvoker"
+
+  resolve: {
+    alias: {
+      '@': path.resolve(__dirname, './src'),
+    },
   },
-  "nsis": {
-    "oneClick": false,
-    "perMachine": false,
-    "allowToChangeInstallationDirectory": true,
-    "createDesktopShortcut": true,
-    "createStartMenuShortcut": true,
-    "shortcutName": "PIXONA",
-    "installerIcon": "public/icon.ico",
-    "uninstallerIcon": "public/icon.ico",
-    "installerHeaderIcon": "public/icon.ico",
-    "deleteAppDataOnUninstall": false,
-    "runAfterFinish": true,
-    "menuCategory": "Photography"
-  },,
-  "mac": {
-    "category": "public.app-category.photography",
-    "target": ["dmg", "zip"],
-    "icon": "public/icon.icns",
-    "hardenedRuntime": true,
-    "gatekeeperAssess": false,
-    "entitlements": "build/entitlements.mac.plist",
-    "entitlementsInherit": "build/entitlements.mac.plist"
+
+  build: {
+    outDir: 'dist',
+    emptyOutDir: true,
+    rollupOptions: {
+      // Don't bundle these - they're Electron/Node modules
+      external: [
+        'electron',
+        'better-sqlite3',
+        'exifreader',
+        'fs',
+        'path',
+        'crypto',
+        'stream',
+        'util',
+        'events',
+        'buffer',
+      ],
+    },
   },
-  "linux": {
-    "target": ["AppImage", "deb"],
-    "icon": "public/icon.png",
-    "category": "Graphics",
-    "maintainer": "Tirumala D <tirumalad.del@gmail.com>"
-  }
-  "extraResources": [
-    {
-      "from": "public",
-      "to": "public",
-      "filter": ["**/*"]
-    }
-  ],
-  "publish": null
-}
+
+  // Optimize dependencies
+  optimizeDeps: {
+    exclude: ['better-sqlite3', 'electron', 'exifreader'],
+  },
+});

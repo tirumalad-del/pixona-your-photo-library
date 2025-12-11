@@ -148,7 +148,7 @@ if (!gotTheLock) {
 }
 
 app.on('window-all-closed', () => {
-  }// Windows-only app - always quit
+  // Windows-only app - always quit
   app.quit();
 });
 

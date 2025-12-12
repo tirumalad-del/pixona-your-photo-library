@@ -37,7 +37,16 @@
     "installerHeaderIcon": "public/icon.ico",
     "deleteAppDataOnUninstall": false,
     "runAfterFinish": true,
-    "menuCategory": "Photography"
+    "menuCategory": "Photography",
+    "fileAssociations": [
+      {
+        "ext": "pixona",
+        "name": "PIXONA Photo Library",
+        "description": "PIXONA Photo Library File",
+        "icon": "public/icon.ico",
+        "role": "Editor"
+      }
+    ]
   },
   "mac": {
     "category": "public.app-category.photography",

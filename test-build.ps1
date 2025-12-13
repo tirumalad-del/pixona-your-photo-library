@@ -11,7 +11,7 @@ Write-Host "`n"
 
 # Step 1: Download face recognition models (CRITICAL!)
 Write-Host "🔍 Step 1/7: Downloading face recognition models..." -ForegroundColor Yellow
-Write-Host "This may take a few minutes (~13MB download)" -ForegroundColor Gray
+Write-Host "This may take a few minutes" -ForegroundColor Gray
 
 try {
     node download-models.js
@@ -40,7 +40,7 @@ Write-Host "🔍 Step 3/7: Installing dependencies with Bun..." -ForegroundColor
 Write-Host "Using frozen lockfile for reproducible builds" -ForegroundColor Gray
 
 try {
-    bun install --frozen-lockfile
+    npm install --frozen-lockfile
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Dependencies installed!" -ForegroundColor Green
     }
@@ -54,7 +54,7 @@ Write-Host "`n🔍 Step 4/7: Building application..." -ForegroundColor Yellow
 Write-Host "Compiling TypeScript and bundling with Vite" -ForegroundColor Gray
 
 try {
-    bun run build
+    npm run build
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Application built successfully!" -ForegroundColor Green
     }
@@ -87,7 +87,7 @@ Write-Host "`n🔍 Step 6/7: Creating Windows installer..." -ForegroundColor Yel
 Write-Host "This may take several minutes" -ForegroundColor Gray
 
 try {
-    bun run build:win
+    npm run build:win
     if ($LASTEXITCODE -eq 0) {
         Write-Host "✅ Windows installer created!" -ForegroundColor Green
     }

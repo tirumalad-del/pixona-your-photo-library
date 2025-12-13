@@ -119,7 +119,7 @@ if (Test-Path "dist\*.exe") {
     Write-Host "  3. Test .pixona file association" -ForegroundColor Gray
     Write-Host "  4. Create GitHub release with installer" -ForegroundColor Gray
     
-} else {
+else {
     Write-Host "⚠️ Installer not found in dist/ folder" -ForegroundColor Yellow
     Write-Host "Check electron-builder output for errors" -ForegroundColor Gray
     

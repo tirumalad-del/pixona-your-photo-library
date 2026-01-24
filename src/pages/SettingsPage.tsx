@@ -32,6 +32,20 @@ export default function SettingsPage() {
       setSoundEnabled(soundManager.isEnabled());
       setSoundVolume(soundManager.getVolume());
 
+      // Load library path from database
+      const savedPath = await db.getSetting<string>('libraryPath');
+      if (savedPath) setLibraryPath(savedPath);
+
+      // Load other settings
+      const savedAutoScan = await db.getSetting<boolean>('autoScan');
+      if (savedAutoScan !== undefined) setAutoScan(savedAutoScan);
+
+      const savedWatchChanges = await db.getSetting<boolean>('watchChanges');
+      if (savedWatchChanges !== undefined) setWatchChanges(savedWatchChanges);
+
+      const savedFaceDetection = await db.getSetting<boolean>('faceDetection');
+      if (savedFaceDetection !== undefined) setFaceDetection(savedFaceDetection);
+
       // Load auto-start from Electron if available, otherwise from db
       const electron = window.electron as any;
       if (electron?.getAutoStart) {
@@ -60,8 +74,11 @@ export default function SettingsPage() {
       if (window.electron) {
         const result = await window.electron.selectFolder();
         if (result.success && result.folders && result.folders.length > 0) {
-          setLibraryPath(result.folders[0]);
-          toast.success("Library path updated");
+          const newPath = result.folders[0];
+          setLibraryPath(newPath);
+          // Auto-save path to database immediately when changed via browser
+          await db.setSetting('libraryPath', newPath);
+          toast.success("Library path updated and saved");
         } else if (result.error) {
           toast.error(result.error);
         }
@@ -173,7 +190,7 @@ export default function SettingsPage() {
                     id="library-path"
                     value={libraryPath}
                     onChange={(e) => setLibraryPath(e.target.value)}
-                    placeholder="C:\Users\Photos"
+                    placeholder="C:\\Users\\Photos"
                     className="flex-1 bg-app-bg border-app-border text-app-text"
                   />
                   <Button variant="outline" onClick={handleBrowseFolder}>
@@ -189,7 +206,6 @@ export default function SettingsPage() {
                 </div>
                 <Switch checked={autoScan} onCheckedChange={setAutoScan} />
               </div>
-
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Watch for changes</Label>
@@ -246,7 +262,6 @@ export default function SettingsPage() {
                 </div>
                 <Switch checked={faceDetection} onCheckedChange={setFaceDetection} />
               </div>
-
               <div className="flex items-center justify-between">
                 <div>
                   <Label>Auto-name faces</Label>
@@ -276,7 +291,6 @@ export default function SettingsPage() {
                 />
                 <p className="text-sm text-app-text-muted">Cache size in MB</p>
               </div>
-
               <Button variant="outline" className="w-full" onClick={handleClearCache}>
                 Clear Thumbnail Cache
               </Button>
@@ -297,7 +311,6 @@ export default function SettingsPage() {
                 </div>
                 <Switch checked={soundEnabled} onCheckedChange={handleSoundToggle} />
               </div>
-
               {soundEnabled && (
                 <div className="space-y-2">
                   <Label>Volume</Label>
@@ -313,7 +326,6 @@ export default function SettingsPage() {
                   </p>
                 </div>
               )}
-
               <Button 
                 variant="outline" 
                 size="sm"

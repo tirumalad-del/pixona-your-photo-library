@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from 'electron';
+import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from, protocol 'electron';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import ExifReader from 'exifreader';
@@ -138,6 +138,12 @@ if (!gotTheLock) {
     nativeTheme.themeSource = 'dark';
     
     createWindow();
+        // Register custom protocol for local file access
+        protocol.registerFileProtocol('pixona-file', (request, callback) => {
+                const url = request.url.replace('pixona-file://', '');
+                callback({ path: url });
+              });
+    
 
     app.on('activate', () => {
       if (BrowserWindow.getAllWindows().length === 0) {

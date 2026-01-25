@@ -1,5 +1,4 @@
-import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme } from, protocol 'electron';
-import * as path from 'path';
+import { app, BrowserWindow, ipcMain, dialog, shell, nativeTheme, protocol } from 'electron';import * as path from 'path';
 import * as fs from 'fs/promises';
 import ExifReader from 'exifreader';
 import { savePhoto, getAllPhotos, savePhotos } from './database'; // ⬅️ ADDED: Database Imports

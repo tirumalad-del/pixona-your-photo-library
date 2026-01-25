@@ -112,8 +112,6 @@ export default function Library() {
               <Video className="w-4 h-4 mr-2" />
               Videos
             </TabsTrigger>
-          </TabsList>
-      </div>
 
       <div className="flex-1 overflow-auto">
         <TabsContent value={activeTab} className="m-0 h-full">
@@ -127,6 +125,7 @@ export default function Library() {
           />
         </TabsContent>
               </Tabs>
+      </div>
       </div>
 
       <BatchEditDialog

@@ -39,6 +39,11 @@ db.exec(`
     iso TEXT,
     shutter_speed TEXT,
     scanned_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        file_hash TEXT,
+    organized_path TEXT,
+    original_path TEXT,
+    is_duplicate BOOLEAN DEFAULT 0,
+    duplicate_group TEXT,
     indexed_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
 
@@ -46,6 +51,9 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS idx_photos_type ON photos(type);
   CREATE INDEX IF NOT EXISTS idx_photos_modified ON photos(modified DESC);
   CREATE INDEX IF NOT EXISTS idx_photos_location ON photos(latitude, longitude);
+    CREATE INDEX IF NOT EXISTS idx_photos_hash ON photos(file_hash);
+  CREATE INDEX IF NOT EXISTS idx_photos_is_duplicate ON photos(is_duplicate);
+  CREATE INDEX IF NOT EXISTS idx_photos_duplicate_group ON photos(duplicate_group);
 `);
 
 console.log('Database tables created/verified');
@@ -244,6 +252,88 @@ export function getPhotoStats() {
     byCamera,
     photosWithLocation: withLocation.count
   };
+}
+
+// Insert photos in batch (for scanner)
+export function insertPhotos(photos: Array<{
+  filePath: string;
+  fileName: string;
+  folderPath: string;
+  sizeBytes: number;
+  createdAt: string;
+  modifiedAt: string;
+  fileHash?: string;
+  organizedPath?: string;
+}>) {
+  const stmt = db.prepare(`
+    INSERT OR REPLACE INTO photos 
+    (path, name, size, created, modified, type, extension, file_hash, organized_path, original_path)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `);
+
+  const transaction = db.transaction((photoList: typeof photos) => {
+    for (const photo of photoList) {
+      const ext = photo.fileName.split('.').pop()?.toLowerCase() || '';
+      const type = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'].includes(ext) ? 'image' : 'video';
+      
+      stmt.run(
+        photo.filePath,
+        photo.fileName,
+        photo.sizeBytes,
+        photo.createdAt,
+        photo.modifiedAt,
+        type,
+        ext,
+        photo.fileHash || null,
+        photo.organizedPath || null,
+        photo.filePath  // original_path
+      );
+    }
+  });
+
+  transaction(photos);
+}
+
+// Reset database for new library
+export function resetForNewLibrary(): void {
+  db.exec('DELETE FROM photos');
+}
+
+// Find duplicates by file hash
+export function findDuplicatesByHash(): PhotoRecord[] {
+  const stmt = db.prepare(`
+    SELECT p1.*, COUNT(*) as duplicate_count
+    FROM photos p1
+    INNER JOIN photos p2 ON p1.file_hash = p2.file_hash AND p1.id < p2.id
+    WHERE p1.file_hash IS NOT NULL
+    GROUP BY p1.file_hash
+    ORDER BY duplicate_count DESC, p1.name
+  `);
+  return stmt.all() as PhotoRecord[];
+}
+
+// Get all photos in duplicate group
+export function getDuplicateGroup(hash: string): PhotoRecord[] {
+  const stmt = db.prepare('SELECT * FROM photos WHERE file_hash = ? ORDER BY path');
+  return stmt.all(hash) as PhotoRecord[];
+}
+
+// Mark photos as duplicates
+export function markAsDuplicates(hash: string, groupId: string): void {
+  const stmt = db.prepare('UPDATE photos SET is_duplicate = 1, duplicate_group = ? WHERE file_hash = ?');
+  stmt.run(groupId, hash);
+}
+
+// Delete photo files and DB records
+export function deletePhotos(photoPaths: string[]): number {
+  const stmt = db.prepare('DELETE FROM photos WHERE path = ?');
+  const transaction = db.transaction((paths: string[]) => {
+    for (const photoPath of paths) {
+      stmt.run(photoPath);
+    }
+  });
+  transaction(photoPaths);
+  return photoPaths.length;
 }
 
 // Export the database instance

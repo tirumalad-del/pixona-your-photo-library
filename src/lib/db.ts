@@ -488,3 +488,27 @@ export async function getPhotosByCameraFromBackend(camera: string): Promise<Phot
     return [];
   }
 }
+
+/**
+ * Get all people from the Electron backend (SQLite database)
+ */
+export async function getPeopleFromBackend(): Promise<Person[]> {
+  if (!window.electron) {
+    console.warn('Electron API not available - running in web mode');
+    return [];
+  }
+  
+  try {
+    const result = await window.electron.invoke('get-all-people');
+    
+    if (!result.success) {
+      console.error('Failed to get people from backend:', result.error);
+      return [];
+    }
+    
+    return result.people || [];
+  } catch (error) {
+    console.error('Error fetching people from backend:', error);
+    return [];
+  }
+}

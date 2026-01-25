@@ -401,3 +401,90 @@ class PhotoDatabase {
 }
 
 export const db = new PhotoDatabase();
+
+// ===========================================
+// IPC WRAPPER FUNCTIONS FOR SQLITE BACKEND
+// ===========================================
+
+/**
+ * Get all photos from the Electron backend (SQLite database)
+ * This bridges the gap between React frontend and Electron backend
+ */
+export async function getPhotosFromBackend(): Promise<PhotoMetadata[]> {
+  if (!window.electron) {
+    console.warn('Electron API not available - running in web mode');
+    return [];
+  }
+  
+  try {
+    const result = await window.electron.invoke('get-all-photos');
+    
+    if (!result.success) {
+      console.error('Failed to get photos from backend:', result.error);
+      return [];
+    }
+    
+    // Convert date strings back to Date objects
+    return result.photos.map((p: any) => ({
+      ...p,
+      created: new Date(p.created),
+      modified: new Date(p.modified),
+      imported: new Date(p.imported || p.created)
+    }));
+  } catch (error) {
+    console.error('Error fetching photos from backend:', error);
+    return [];
+  }
+}
+
+/**
+ * Get photos filtered by date range from the backend
+ */
+export async function getPhotosByDateFromBackend(startDate: Date, endDate: Date): Promise<PhotoMetadata[]> {
+  if (!window.electron) return [];
+  
+  try {
+    const result = await window.electron.invoke('get-photos-by-date', startDate.toISOString(), endDate.toISOString());
+    
+    if (!result.success) {
+      console.error('Failed to get photos by date:', result.error);
+      return [];
+    }
+    
+    return result.photos.map((p: any) => ({
+      ...p,
+      created: new Date(p.created),
+      modified: new Date(p.modified),
+      imported: new Date(p.imported || p.created)
+    }));
+  } catch (error) {
+    console.error('Error fetching photos by date:', error);
+    return [];
+  }
+}
+
+/**
+ * Get photos filtered by camera from the backend
+ */
+export async function getPhotosByCameraFromBackend(camera: string): Promise<PhotoMetadata[]> {
+  if (!window.electron) return [];
+  
+  try {
+    const result = await window.electron.invoke('get-photos-by-camera', camera);
+    
+    if (!result.success) {
+      console.error('Failed to get photos by camera:', result.error);
+      return [];
+    }
+    
+    return result.photos.map((p: any) => ({
+      ...p,
+      created: new Date(p.created),
+      modified: new Date(p.modified),
+      imported: new Date(p.imported || p.created)
+    }));
+  } catch (error) {
+    console.error('Error fetching photos by camera:', error);
+    return [];
+  }
+}

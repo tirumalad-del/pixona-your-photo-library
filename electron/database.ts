@@ -2,6 +2,7 @@ import Database from 'better-sqlite3';
 import { app } from 'electron';
 import * as path from 'path';
 import * as fs from 'fs';
+import { runMigrations } from './migrations';
 
 // Get database path in user data directory
 const userDataPath = app.getPath('userData');
@@ -57,6 +58,9 @@ db.exec(`
 `);
 
 console.log('Database tables created/verified');
+
+// Run database migrations to add any missing columns
+runMigrations(db);
 
 export interface PhotoRecord {
   id?: number;

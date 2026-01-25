@@ -8,6 +8,7 @@ import {
   Copy, 
   Settings,
   Calendar,
+    Video,
   Download
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,7 @@ import { SunflowerLoader, SunflowerIcon } from "@/components/SunflowerLoader";
 const navItems = [
   { title: "Library", url: "/", icon: Images },
   { title: "Calendar", url: "/calendar", icon: Calendar },
+    { title: "Videos", url: "/videos", icon: Video },
   { title: "People", url: "/people", icon: Users },
   { title: "Albums", url: "/albums", icon: FolderOpen },
   { title: "Places", url: "/places", icon: MapPin },

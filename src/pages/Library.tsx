@@ -113,7 +113,6 @@ export default function Library() {
               Videos
             </TabsTrigger>
           </TabsList>
-        </Tabs>
       </div>
 
       <div className="flex-1 overflow-auto">
@@ -127,6 +126,7 @@ export default function Library() {
             loading={loading}
           />
         </TabsContent>
+              </Tabs>
       </div>
 
       <BatchEditDialog

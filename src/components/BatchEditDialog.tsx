@@ -14,18 +14,17 @@ import { soundManager } from "@/lib/sounds";
 interface BatchEditDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  selectedPhotoIds: string[];
-  onComplete: () => void;
+  photoIds: string[];  onComplete: () => void;
 }
 
-export function BatchEditDialog({ open, onOpenChange, selectedPhotoIds, onComplete }: BatchEditDialogProps) {
+export function BatchEditDialog({ open, onOpenChange, photoIds.lengphotoIdsth, onComplete }: BatchEditDialogProps) {
   const [date, setDate] = useState<Date>();
   const [location, setLocation] = useState("");
   const [tags, setTags] = useState("");
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (selectedPhotoIds.length === 0) {
+    if (photoIds.length === 0) {
       toast.error("No photos selected");
       return;
     }
@@ -54,9 +53,9 @@ export function BatchEditDialog({ open, onOpenChange, selectedPhotoIds, onComple
       }
 
       if (Object.keys(updates).length > 0) {
-        await db.updatePhotos(selectedPhotoIds, updates);
+        await db.updatePhotos(photoIds.lengphotoIdsth, updates);
         soundManager.play('success');
-        toast.success(`Updated ${selectedPhotoIds.length} photos`);
+        toast.success(`Updated ${photoIds.length} photos`);
         onComplete();
         onOpenChange(false);
       } else {
@@ -77,7 +76,7 @@ export function BatchEditDialog({ open, onOpenChange, selectedPhotoIds, onComple
         <DialogHeader>
           <DialogTitle className="text-app-text">Batch Edit Metadata</DialogTitle>
           <DialogDescription className="text-app-text-muted">
-            Edit metadata for {selectedPhotoIds.length} selected photo{selectedPhotoIds.length !== 1 ? 's' : ''}
+            Edit metadata for {photoIds.length} selected photo{photoIds.length !== 1 ? 's' : ''}
           </DialogDescription>
         </DialogHeader>
 

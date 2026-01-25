@@ -14,6 +14,7 @@ import Places from "./pages/Places";
 import Duplicates from "./pages/Duplicates";
 import SettingsPage from "./pages/SettingsPage";
 import NotFound from "./pages/NotFound";
+import Videos from "./pages/Videos";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +35,7 @@ const App = () => {
             <Routes>
               <Route path="/" element={<Library />} />
               <Route path="/calendar" element={<Calendar />} />
+                              <Route path="/videos" element={<Videos />} />
               <Route path="/people" element={<People />} />
               <Route path="/albums" element={<Albums />} />
               <Route path="/places" element={<Places />} />

@@ -1,24 +1,18 @@
 import { ViewHeader } from "@/components/ViewHeader";
 import { StatusBar } from "@/components/StatusBar";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { motion } from "framer-motion";
-import { db, Person } from "@/lib/db";
+import { db } from "../db/database";
+import { useLiveQuery } from "dexie-react-hooks";
 import { Button } from "@/components/ui/button";
 import { FaceScanDialog } from "@/components/FaceScanDialog";
-import { Scan } from "lucide-react";
+import { Scan, User } from "lucide-react";
 
 export default function People() {
-  const [people, setPeople] = useState<Person[]>([]);
   const [scanDialogOpen, setScanDialogOpen] = useState(false);
-
-  useEffect(() => {
-    loadPeople();
-  }, []);
-
-  const loadPeople = async () => {
-    const allPeople = await db.getAllPeople();
-    setPeople(allPeople);
-  };
+  
+  // Use live query to update UI automatically during face recognition/scanning
+  const people = useLiveQuery(() => db.people.toArray()) || [];
 
   return (
     <div className="flex-1 flex flex-col bg-app-bg overflow-hidden">
@@ -28,63 +22,60 @@ export default function People() {
       />
       
       <div className="p-4 border-b border-app-border">
-        <Button onClick={() => setScanDialogOpen(true)} className="gap-2">
-          <Scan className="w-4 h-4" />
+        <Button 
+          variant="outline" 
+          onClick={() => setScanDialogOpen(true)}
+          className="bg-app-accent/10 border-app-accent/20 hover:bg-app-accent/20"
+        >
+          <Scan className="w-4 h-4 mr-2" />
           Scan for Faces
         </Button>
       </div>
 
       <div className="flex-1 overflow-auto p-6">
-        {people.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-full text-center">
-            <Scan className="w-24 h-24 text-app-accent mb-4" />
-            <h3 className="text-xl font-semibold text-app-text mb-2">
-              No People Found
-            </h3>
-            <p className="text-app-text-muted max-w-md mb-4">
-              Scan your photo library to automatically detect and group photos by the people in them.
-            </p>
-            <Button onClick={() => setScanDialogOpen(true)} className="gap-2">
-              <Scan className="w-4 h-4" />
-              Start Face Recognition Scan
-            </Button>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
-            {people.map((person, idx) => (
-              <motion.div
-                key={person.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.05 }}
-                className="group cursor-pointer"
-              >
-                <div className="aspect-square rounded-full overflow-hidden bg-app-surface mb-3 ring-2 ring-transparent hover:ring-app-accent transition-all">
-                  {person.avatarPhotoId && (
-                    <img
-                      src={person.avatarPhotoId}
-                      alt={person.name}
-                      className="w-full h-full object-cover"
-                    />
-                  )}
-                </div>
-                <div className="text-center">
-                  <h3 className="font-medium text-app-text">{person.name}</h3>
-                  <p className="text-sm text-app-text-muted">{person.photoIds.length} photos</p>
-                </div>
-              </motion.div>
-            ))}
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-6">
+          {people.map((person, idx) => (
+            <motion.div
+              key={person.id}
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.05 }}
+              className="flex flex-col items-center group cursor-pointer"
+            >
+              <div className="w-full aspect-square rounded-full overflow-hidden bg-app-card border-4 border-transparent group-hover:border-app-accent transition-all relative">
+                {person.thumbnail ? (
+                  <img
+                    src={`file://${person.thumbnail}`}
+                    alt={person.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex items-center justify-center bg-gray-800">
+                    <User className="w-12 h-12 text-gray-600" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-3 text-sm font-medium group-hover:text-app-accent transition-colors">
+                {person.name || "Unknown Person"}
+              </p>
+              <p className="text-xs text-gray-500">{person.photoCount || 0} photos</p>
+            </motion.div>
+          ))}
+        </div>
+
+        {people.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <User className="w-16 h-16 mb-4 opacity-20" />
+            <p>No people identified yet. Start a scan to find faces in your library.</p>
           </div>
         )}
       </div>
-      
-      <StatusBar itemCount={people.length} viewMode="Grid" />
-      
+
       <FaceScanDialog 
         open={scanDialogOpen} 
-        onOpenChange={setScanDialogOpen}
-        onComplete={loadPeople}
+        onOpenChange={setScanDialogOpen} 
       />
+      <StatusBar />
     </div>
   );
 }

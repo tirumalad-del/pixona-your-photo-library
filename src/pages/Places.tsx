@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { ViewHeader } from "@/components/ViewHeader";
 import { StatusBar } from "@/components/StatusBar";
-import { mockPhotos } from "@/lib/mockData";
 import { Lightbox } from "@/components/Lightbox";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
@@ -23,12 +22,33 @@ export default function Places() {
   const mapInstanceRef = useRef<L.Map | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [photos, setPhotos] = useState<any[]>([]);
+  const [photosWithLocation, setPhotosWithLocation] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
-  // Filter photos with location data
-  const photosWithLocation = mockPhotos.filter(photo => photo.location);
+  // Load photos with GPS coordinates from database
+  useEffect(() => {
+    const loadPhotos = async () => {
+      if (window.electron && window.electron.getAllPhotos) {
+        setLoading(true);
+        const result = await window.electron.getAllPhotos();
+        if (result.success && result.photos) {
+          const allPhotos = result.photos;
+          // Filter only photos with valid GPS coordinates
+          const withGPS = allPhotos.filter(
+            (photo: any) => photo.latitude != null && photo.longitude != null
+          );
+          setPhotos(allPhotos);
+          setPhotosWithLocation(withGPS);
+        }
+        setLoading(false);
+      }
+    };
+    loadPhotos();
+  }, []);
 
   useEffect(() => {
-    if (!mapRef.current || mapInstanceRef.current) return;
+    if (!mapRef.current || mapInstanceRef.current || loading || photosWithLocation.length === 0) return;
 
     // Initialize map
     const map = L.map(mapRef.current).setView([40, -10], 3);
@@ -40,13 +60,18 @@ export default function Places() {
       maxZoom: 19,
     }).addTo(map);
 
-    // Group photos by location
-    const locationGroups = photosWithLocation.reduce((acc, photo) => {
-      const key = photo.location || '';
-      if (!acc[key]) acc[key] = [];
-      acc[key].push(photo);
-      return acc;
-    }, {} as Record<string, typeof mockPhotos>);
+    // Group photos by location (cluster nearby coordinates)
+    const locationGroups: { [key: string]: any[] } = {};
+    photosWithLocation.forEach(photo => {
+      // Round coordinates to 3 decimal places for grouping (~100m precision)
+      const lat = Math.round(photo.latitude * 1000) / 1000;
+      const lng = Math.round(photo.longitude * 1000) / 1000;
+      const key = `${lat},${lng}`;
+      if (!locationGroups[key]) {
+        locationGroups[key] = [];
+      }
+      locationGroups[key].push(photo);
+    });
 
     // Add marker cluster support
     const markers = L.markerClusterGroup({
@@ -57,24 +82,25 @@ export default function Places() {
     });
 
     // Add markers for each location
-    Object.entries(locationGroups).forEach(([location, photos]) => {
-      // Generate random coordinates for demo (in production, parse from EXIF)
-      const lat = 20 + Math.random() * 40;
-      const lng = -20 + Math.random() * 80;
-
+    Object.entries(locationGroups).forEach(([location, locationPhotos]) => {
+      const [lat, lng] = location.split(',').map(Number);
       const marker = L.marker([lat, lng]);
       
       // Create popup content
       const popupContent = document.createElement('div');
       popupContent.className = 'space-y-2';
+      
+      // Get location name from first photo or use coordinates
+      const locationName = locationPhotos[0].location || `${lat.toFixed(4)}°, ${lng.toFixed(4)}°`;
+      
       popupContent.innerHTML = `
-        <h3 class="font-semibold text-app-text">${location}</h3>
-        <p class="text-sm text-app-text-muted">${photos.length} photo${photos.length > 1 ? 's' : ''}</p>
+        <h3 class="font-semibold text-app-text">${locationName}</h3>
+        <p class="text-sm text-app-text-muted">${locationPhotos.length} photo${locationPhotos.length > 1 ? 's' : ''}</p>
         <div class="grid grid-cols-3 gap-1 mt-2">
-          ${photos.slice(0, 6).map(photo => `
+          ${locationPhotos.slice(0, 6).map(photo => `
             <img 
-              src="${photo.url}" 
-              alt="${location}"
+              src="file://${photo.path}" 
+              alt="${locationName}"
               class="w-16 h-16 object-cover rounded cursor-pointer hover:ring-2 hover:ring-app-accent"
               data-photo-id="${photo.id}"
             />
@@ -86,7 +112,7 @@ export default function Places() {
       popupContent.querySelectorAll('img').forEach((img) => {
         img.addEventListener('click', () => {
           const photoId = img.getAttribute('data-photo-id');
-          const index = mockPhotos.findIndex(p => p.id === photoId);
+          const index = photos.findIndex(p => p.id === photoId);
           if (index !== -1) {
             setLightboxIndex(index);
             setLightboxOpen(true);
@@ -100,13 +126,18 @@ export default function Places() {
 
     map.addLayer(markers);
 
+    // Fit map to show all markers
+    if (markers.getBounds().isValid()) {
+      map.fitBounds(markers.getBounds(), { padding: [50, 50] });
+    }
+
     return () => {
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
     };
-  }, []);
+  }, [photosWithLocation, loading]);
 
   return (
     <div className="flex-1 flex flex-col bg-app-bg overflow-hidden">
@@ -115,7 +146,11 @@ export default function Places() {
         subtitle="Photos organized by location"
       />
       
-      {photosWithLocation.length > 0 ? (
+      {loading ? (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-app-text-muted">Loading locations...</div>
+        </div>
+      ) : photosWithLocation.length > 0 ? (
         <div className="flex-1 relative">
           <div 
             ref={mapRef} 
@@ -132,7 +167,7 @@ export default function Places() {
               No Location Data
             </h3>
             <p className="text-app-text-muted">
-              Photos with GPS/EXIF location data will appear on this interactive map.
+              Photos with GPS/EXIF location data will appear on this interactive map. Scan your library to detect geotagged photos.
             </p>
           </div>
         </div>
@@ -142,7 +177,7 @@ export default function Places() {
 
       {lightboxOpen && (
         <Lightbox
-          media={mockPhotos}
+          media={photos}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxOpen(false)}
         />

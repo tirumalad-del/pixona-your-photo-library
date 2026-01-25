@@ -2,116 +2,146 @@ import { useState, useMemo } from "react";
 import { ViewHeader } from "@/components/ViewHeader";
 import { StatusBar } from "@/components/StatusBar";
 import { Lightbox } from "@/components/Lightbox";
-import { mockPhotos } from "@/lib/mockData";
 import { motion } from "framer-motion";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Video } from "lucide-react";
 import { format, parseISO } from "date-fns";
+import { useLiveQuery } from "dexie-react-hooks";
+import { db } from "../db/database";
+import { Button } from "@/components/ui/button";
 
 export default function Calendar() {
-  const [selectedYear, setSelectedYear] = useState("2024");
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear().toString());
   const [selectedMonth, setSelectedMonth] = useState<string | null>(null);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
 
-  const years = ["2024", "2023", "2022"];
+  const photos = useLiveQuery(() => db.photos.toArray()) || [];
+
+  const years = useMemo(() => {
+    if (photos.length === 0) return [new Date().getFullYear().toString()];
+    const y = photos.map(p => {
+      try {
+        return format(parseISO(p.date), 'yyyy');
+      } catch (e) {
+        return new Date().getFullYear().toString();
+      }
+    });
+    return Array.from(new Set(y)).sort().reverse();
+  }, [photos]);
+
   const months = [
     "January", "February", "March", "April", "May", "June",
     "July", "August", "September", "October", "November", "December"
   ];
 
-  // Group photos by month/year
   const groupedPhotos = useMemo(() => {
-    const groups: { [key: string]: { [key: string]: { [key: string]: typeof mockPhotos } } } = {};
+    const groups: { [key: string]: typeof photos } = {};
     
-    mockPhotos.forEach((photo) => {
-      const date = parseISO(photo.date);
-      const year = format(date, "yyyy");
-      const month = format(date, "MMMM");
-      const day = format(date, "MMMM d, yyyy");
-      
-      if (!groups[year]) groups[year] = {};
-      if (!groups[year][month]) groups[year][month] = {};
-      if (!groups[year][month][day]) groups[year][month][day] = [];
-      groups[year][month][day].push(photo);
+    photos.forEach((photo) => {
+      try {
+        const date = parseISO(photo.date);
+        const year = format(date, "yyyy");
+        const month = format(date, "MMMM");
+        
+        if (year === selectedYear) {
+          if (!groups[month]) groups[month] = [];
+          groups[month].push(photo);
+        }
+      } catch (e) {
+        // Handle invalid dates
+      }
     });
     
     return groups;
-  }, []);
+  }, [photos, selectedYear]);
 
-  const openLightbox = (index: number, monthPhotos: typeof mockPhotos) => {
-    const globalIndex = mockPhotos.findIndex(p => p.id === monthPhotos[index].id);
-    setLightboxIndex(globalIndex);
+  const activePhotos = useMemo(() => {
+    if (selectedMonth) {
+      return groupedPhotos[selectedMonth] || [];
+    }
+    return Object.values(groupedPhotos).flat();
+  }, [groupedPhotos, selectedMonth]);
+
+  const handlePhotoClick = (photo: any) => {
+    const index = activePhotos.findIndex(p => p.path === photo.path);
+    setLightboxIndex(index);
     setLightboxOpen(true);
   };
-
-  const filteredData = selectedMonth 
-    ? groupedPhotos[selectedYear]?.[selectedMonth] || {}
-    : groupedPhotos[selectedYear] || {};
 
   return (
     <div className="flex-1 flex flex-col bg-app-bg overflow-hidden">
       <ViewHeader
         title="Calendar"
-        subtitle="Photos organized by date"
+        subtitle={`${photos.length} photos organized by date`}
       />
 
-      {/* Year/Month Picker */}
-      <div className="p-4 border-b border-sidebar-border flex gap-3">
-        <Select value={selectedYear} onValueChange={setSelectedYear}>
-          <SelectTrigger className="w-32 bg-app-surface border-sidebar-border">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent className="bg-app-surface border-sidebar-border">
-            {years.map((year) => (
-              <SelectItem key={year} value={year}>
-                {year}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select value={selectedMonth || "all"} onValueChange={(v) => setSelectedMonth(v === "all" ? null : v)}>
-          <SelectTrigger className="w-40 bg-app-surface border-sidebar-border">
-            <SelectValue placeholder="All Months" />
-          </SelectTrigger>
-          <SelectContent className="bg-app-surface border-sidebar-border">
-            <SelectItem value="all">All Months</SelectItem>
-            {months.map((month) => (
-              <SelectItem key={month} value={month}>
-                {month}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Content */}
       <div className="flex-1 overflow-auto p-6">
-        {selectedMonth ? (
-          // Date view - grouped by date
-          <div className="space-y-8">
-            {Object.entries(filteredData).map(([date, photos]) => (
-              <div key={date}>
-                <h3 className="text-lg font-semibold text-app-text mb-3">{date}</h3>
-                <div className="grid grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-1">
-                  {photos.map((photo, idx) => (
+        <div className="flex gap-4 mb-8 overflow-hidden items-center">
+          <Select value={selectedYear} onValueChange={setSelectedYear}>
+            <SelectTrigger className="w-32">
+              <SelectValue placeholder="Year" />
+            </SelectTrigger>
+            <SelectContent>
+              {years.map(year => (
+                <SelectItem key={year} value={year}>{year}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <div className="flex gap-2 overflow-x-auto pb-2 no-scrollbar flex-1">
+            <Button
+              variant={selectedMonth === null ? "default" : "ghost"}
+              onClick={() => setSelectedMonth(null)}
+              className="whitespace-nowrap"
+            >
+              All Months
+            </Button>
+            {months.map(month => (
+              <Button
+                key={month}
+                variant={selectedMonth === month ? "default" : "ghost"}
+                onClick={() => setSelectedMonth(month)}
+                disabled={!groupedPhotos[month]}
+                className="whitespace-nowrap"
+              >
+                {month}
+              </Button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-12">
+          {months.filter(m => !selectedMonth || m === selectedMonth).map((month) => {
+            const monthPhotos = groupedPhotos[month];
+            if (!monthPhotos) return null;
+
+            return (
+              <div key={month}>
+                <h3 className="text-xl font-bold mb-4 flex items-center gap-2">
+                  {month}
+                  <span className="text-sm font-normal text-gray-500">
+                    ({monthPhotos.length} items)
+                  </span>
+                </h3>
+                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-4">
+                  {monthPhotos.map((photo, idx) => (
                     <motion.div
-                      key={photo.id}
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: idx * 0.02 }}
-                      className="aspect-square bg-app-surface rounded-sm overflow-hidden cursor-pointer hover:ring-2 hover:ring-app-accent transition-all relative"
-                      onClick={() => openLightbox(idx, photos)}
+                      key={photo.path}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: idx * 0.01 }}
+                      className="aspect-square rounded-lg overflow-hidden bg-app-card cursor-pointer group relative shadow-md"
+                      onClick={() => handlePhotoClick(photo)}
                     >
                       <img
-                        src={photo.url}
-                        alt={`Photo from ${photo.date}`}
-                        className="w-full h-full object-cover"
+                        src={`file://${photo.path}`}
+                        alt={photo.name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
                         loading="lazy"
                       />
                       {photo.type === 'video' && (
-                        <div className="absolute top-2 right-2 bg-black/60 rounded p-1">
+                        <div className="absolute top-2 right-2 bg-black/50 p-1 rounded-full">
                           <Video className="w-3 h-3 text-white" />
                         </div>
                       )}
@@ -119,56 +149,34 @@ export default function Calendar() {
                   ))}
                 </div>
               </div>
-            ))}
+            );
+          })}
+        </div>
+
+        {activePhotos.length === 0 && photos.length > 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <p>No photos found for the selected period.</p>
           </div>
-        ) : (
-          // Month view - grouped by month
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-            {Object.entries(filteredData).map(([month, dates]) => {
-              const dateGroups = dates as { [key: string]: typeof mockPhotos };
-              const allPhotos = Object.values(dateGroups).flat();
-              const coverPhoto = allPhotos[0];
-              
-              return (
-                <motion.div
-                  key={month}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="cursor-pointer group"
-                  onClick={() => setSelectedMonth(month)}
-                >
-                  <div className="aspect-square rounded-lg overflow-hidden bg-app-surface mb-3 hover:ring-2 hover:ring-app-accent transition-all relative">
-                    <img
-                      src={coverPhoto.url}
-                      alt={month}
-                      className="w-full h-full object-cover"
-                    />
-                    {coverPhoto.type === 'video' && (
-                      <div className="absolute top-2 right-2 bg-black/60 rounded p-1">
-                        <Video className="w-4 h-4 text-white" />
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <h3 className="font-medium text-app-text">{month}</h3>
-                    <p className="text-sm text-app-text-muted">{allPhotos.length} items</p>
-                  </div>
-                </motion.div>
-              );
-            })}
+        )}
+
+        {photos.length === 0 && (
+          <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+            <p>No photos found in database. Start a scan to see your calendar.</p>
           </div>
         )}
       </div>
 
-      <StatusBar itemCount={Object.values(filteredData).flat().length} viewMode="Calendar" />
-
-      {lightboxOpen && (
-        <Lightbox
-          media={mockPhotos}
-          initialIndex={lightboxIndex}
-          onClose={() => setLightboxOpen(false)}
-        />
-      )}
+      <Lightbox
+        isOpen={lightboxOpen}
+        onClose={() => setLightboxOpen(false)}
+        photos={activePhotos.map(p => ({
+          url: `file://${p.path}`,
+          type: p.type,
+          name: p.name
+        }))}
+        initialIndex={lightboxIndex}
+      />
+      <StatusBar />
     </div>
   );
 }

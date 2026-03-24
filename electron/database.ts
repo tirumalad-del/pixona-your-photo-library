@@ -40,19 +40,18 @@ db.exec(`
     iso TEXT,
     shutter_speed TEXT,
     scanned_at TEXT DEFAULT CURRENT_TIMESTAMP,
-        file_hash TEXT,
+    file_hash TEXT,
     organized_path TEXT,
     original_path TEXT,
     is_duplicate BOOLEAN DEFAULT 0,
     duplicate_group TEXT,
     indexed_at TEXT DEFAULT CURRENT_TIMESTAMP
   );
-
   CREATE INDEX IF NOT EXISTS idx_photos_path ON photos(path);
   CREATE INDEX IF NOT EXISTS idx_photos_type ON photos(type);
   CREATE INDEX IF NOT EXISTS idx_photos_modified ON photos(modified DESC);
   CREATE INDEX IF NOT EXISTS idx_photos_location ON photos(latitude, longitude);
-    CREATE INDEX IF NOT EXISTS idx_photos_hash ON photos(file_hash);
+  CREATE INDEX IF NOT EXISTS idx_photos_hash ON photos(file_hash);
   CREATE INDEX IF NOT EXISTS idx_photos_is_duplicate ON photos(is_duplicate);
   CREATE INDEX IF NOT EXISTS idx_photos_duplicate_group ON photos(duplicate_group);
 `);
@@ -103,12 +102,12 @@ function toISOString(date: string | Date): string {
 // Save a single photo to database
 export function savePhoto(photo: any): void {
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO photos 
-    (path, name, size, created, modified, type, extension, latitude, longitude, 
+    INSERT OR REPLACE INTO photos
+    (path, name, size, created, modified, type, extension, latitude, longitude,
      camera, lens, focal_length, aperture, iso, shutter_speed)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
+
   stmt.run(
     photo.path,
     photo.name,
@@ -131,12 +130,12 @@ export function savePhoto(photo: any): void {
 // Save multiple photos (batch operation)
 export function savePhotos(photos: any[]): void {
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO photos 
-    (path, name, size, created, modified, type, extension, latitude, longitude, 
+    INSERT OR REPLACE INTO photos
+    (path, name, size, created, modified, type, extension, latitude, longitude,
      camera, lens, focal_length, aperture, iso, shutter_speed)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-  
+
   const transaction = db.transaction((photoList: any[]) => {
     for (const photo of photoList) {
       stmt.run(
@@ -158,7 +157,7 @@ export function savePhotos(photos: any[]): void {
       );
     }
   });
-  
+
   transaction(photos);
 }
 
@@ -232,7 +231,7 @@ export function getPhotosByCamera(camera: string): PhotoRecord[] {
 // Find duplicates (same name and size)
 export function findDuplicates(): PhotoRecord[] {
   const stmt = db.prepare(`
-    SELECT p1.* 
+    SELECT p1.*
     FROM photos p1
     INNER JOIN photos p2 ON p1.size = p2.size AND p1.name = p2.name AND p1.id < p2.id
     GROUP BY p1.id
@@ -248,7 +247,7 @@ export function getPhotoStats() {
   const byType = db.prepare('SELECT type, COUNT(*) as count FROM photos GROUP BY type').all();
   const byCamera = db.prepare('SELECT camera, COUNT(*) as count FROM photos WHERE camera IS NOT NULL GROUP BY camera ORDER BY count DESC LIMIT 10').all();
   const withLocation = db.prepare('SELECT COUNT(*) as count FROM photos WHERE latitude IS NOT NULL').get() as { count: number };
-  
+
   return {
     totalPhotos: totalPhotos.count,
     totalSize: totalSize.total || 0,
@@ -270,16 +269,15 @@ export function insertPhotos(photos: Array<{
   organizedPath?: string;
 }>) {
   const stmt = db.prepare(`
-    INSERT OR REPLACE INTO photos 
+    INSERT OR REPLACE INTO photos
     (path, name, size, created, modified, type, extension, file_hash, organized_path, original_path)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
-
   const transaction = db.transaction((photoList: typeof photos) => {
     for (const photo of photoList) {
       const ext = photo.fileName.split('.').pop()?.toLowerCase() || '';
       const type = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'heic', 'heif'].includes(ext) ? 'image' : 'video';
-      
+
       stmt.run(
         photo.filePath,
         photo.fileName,
@@ -290,11 +288,10 @@ export function insertPhotos(photos: Array<{
         ext,
         photo.fileHash || null,
         photo.organizedPath || null,
-        photo.filePath  // original_path
+        photo.filePath // original_path
       );
     }
   });
-
   transaction(photos);
 }
 
